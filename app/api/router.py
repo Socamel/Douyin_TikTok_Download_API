@@ -5,6 +5,7 @@ from app.api.endpoints import (
     douyin_web,
     bilibili_web,
     hybrid_parsing, ios_shortcut, download,
+    cookie_manager, aitable_integration, health,
 )
 
 router = APIRouter()
@@ -27,3 +28,12 @@ router.include_router(ios_shortcut.router, prefix="/ios", tags=["iOS-Shortcut"])
 
 # Download routers
 router.include_router(download.router, tags=["Download"])
+
+# Cookie management routers
+router.include_router(cookie_manager.router, prefix="/cookie", tags=["Cookie-Management"])
+
+# Aitable.ai integration routers
+router.include_router(aitable_integration.router, prefix="/aitable", tags=["Aitable-Integration"])
+
+# Health check routers
+router.include_router(health.router, tags=["Health-Check"])

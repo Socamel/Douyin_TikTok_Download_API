@@ -1,9 +1,16 @@
 from typing import List
+import sys
+import os
 
 from fastapi import APIRouter, Body, Query, Request, HTTPException  # 导入FastAPI组件
 from app.api.models.APIResponseModel import ResponseModel, ErrorResponseModel  # 导入响应模型
 
 from crawlers.douyin.web.web_crawler import DouyinWebCrawler  # 导入抖音Web爬虫
+
+# 添加项目根目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+
+from database import db_manager
 
 
 router = APIRouter()
@@ -1061,6 +1068,163 @@ async def get_all_webcast_id(request: Request,
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
+    except Exception as e:
+        status_code = 400
+        detail = ErrorResponseModel(code=status_code,
+                                    router=request.url.path,
+                                    params=dict(request.query_params),
+                                    )
+        raise HTTPException(status_code=status_code, detail=detail.dict())
+
+
+# 获取用户新视频（去重）
+@router.get("/fetch_user_new_videos", response_model=ResponseModel,
+            summary="获取用户新视频（去重）/Get user new videos (deduplication)")
+async def fetch_user_new_videos(request: Request,
+                               sec_user_id: str = Query(
+                                   example="MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE",
+                                   description="用户sec_user_id/User sec_user_id"),
+                               max_cursor: int = Query(default=0, description="最大游标/Maximum cursor"),
+                               count: int = Query(default=20, description="每页数量/Number per page")):
+    """
+    # [中文]
+    ### 用途:
+    - 获取用户新视频（去重），只返回数据库中不存在的新视频
+    ### 参数:
+    - sec_user_id: 用户sec_user_id
+    - max_cursor: 最大游标
+    - count: 每页数量
+    ### 返回:
+    - 新视频数据，如果没有新视频则返回"没有新视频"
+
+    # [English]
+    ### Purpose:
+    - Get user new videos (deduplication), only return videos that don't exist in database
+    ### Parameters:
+    - sec_user_id: User sec_user_id
+    - max_cursor: Maximum cursor
+    - count: Number per page
+    ### Return:
+    - New video data, or "没有新视频" if no new videos
+
+    # [示例/Example]
+    sec_user_id = "MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE"
+    max_cursor = 0
+    count = 20
+    """
+    try:
+        # 获取用户所有视频
+        all_videos_data = await DouyinWebCrawler.fetch_user_post_videos(sec_user_id, max_cursor, count)
+        
+        if not all_videos_data or 'aweme_list' not in all_videos_data:
+            return ResponseModel(
+                code=200,
+                router=request.url.path,
+                message="没有获取到视频数据",
+                data={
+                    "message": "没有获取到视频数据",
+                    "new_videos": [],
+                    "total_fetched": 0,
+                    "new_count": 0
+                }
+            )
+        
+        all_videos = all_videos_data.get('aweme_list', [])
+        total_fetched = len(all_videos)
+        
+        if total_fetched == 0:
+            return ResponseModel(
+                code=200,
+                router=request.url.path,
+                message="没有新视频",
+                data={
+                    "message": "没有新视频",
+                    "new_videos": [],
+                    "total_fetched": 0,
+                    "new_count": 0
+                }
+            )
+        
+        # 获取用户信息并保存
+        user_info = all_videos_data.get('user_info', {})
+        if user_info:
+            db_manager.save_user({
+                'user_id': sec_user_id,
+                'username': user_info.get('unique_id', ''),
+                'nickname': user_info.get('nickname', ''),
+                'avatar_url': user_info.get('avatar_larger', {}).get('url_list', [''])[0] if user_info.get('avatar_larger', {}).get('url_list') else '',
+                'follower_count': user_info.get('follower_count', 0),
+                'following_count': user_info.get('following_count', 0),
+                'video_count': user_info.get('aweme_count', 0)
+            })
+        
+        # 检查新视频
+        new_videos = []
+        existing_video_ids = []
+        
+        for video in all_videos:
+            video_id = video.get('aweme_id', '')
+            if video_id:
+                # 检查视频是否已存在
+                if not db_manager.video_exists(video_id):
+                    # 保存新视频到数据库
+                    video_data = {
+                        'video_id': video_id,
+                        'user_id': sec_user_id,
+                        'title': video.get('desc', ''),
+                        'description': video.get('desc', ''),
+                        'video_url': video.get('video', {}).get('play_addr', {}).get('url_list', [''])[0] if video.get('video', {}).get('play_addr', {}).get('url_list') else '',
+                        'cover_url': video.get('video', {}).get('cover', {}).get('url_list', [''])[0] if video.get('video', {}).get('cover', {}).get('url_list') else '',
+                        'duration': video.get('video', {}).get('duration', 0),
+                        'play_count': video.get('statistics', {}).get('play_count', 0),
+                        'like_count': video.get('statistics', {}).get('digg_count', 0),
+                        'comment_count': video.get('statistics', {}).get('comment_count', 0),
+                        'share_count': video.get('statistics', {}).get('share_count', 0),
+                        'douyin_created_at': video.get('create_time', 0)
+                    }
+                    
+                    if db_manager.save_video(video_data):
+                        new_videos.append({
+                            'video_id': video_id,
+                            'title': video.get('desc', ''),
+                            'video_url': video_data['video_url'],
+                            'cover_url': video_data['cover_url'],
+                            'duration': video_data['duration'],
+                            'play_count': video_data['play_count'],
+                            'like_count': video_data['like_count'],
+                            'comment_count': video_data['comment_count'],
+                            'share_count': video_data['share_count']
+                        })
+                else:
+                    existing_video_ids.append(video_id)
+        
+        new_count = len(new_videos)
+        
+        if new_count == 0:
+            return ResponseModel(
+                code=200,
+                router=request.url.path,
+                message="没有新视频",
+                data={
+                    "message": "没有新视频",
+                    "new_videos": [],
+                    "total_fetched": total_fetched,
+                    "new_count": 0
+                }
+            )
+        else:
+            return ResponseModel(
+                code=200,
+                router=request.url.path,
+                message=f"发现 {new_count} 个新视频",
+                data={
+                    "message": f"发现 {new_count} 个新视频",
+                    "new_videos": new_videos,
+                    "total_fetched": total_fetched,
+                    "new_count": new_count
+                }
+            )
+            
     except Exception as e:
         status_code = 400
         detail = ErrorResponseModel(code=status_code,

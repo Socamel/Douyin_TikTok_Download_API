@@ -38,9 +38,7 @@ import uvicorn
 from fastapi import FastAPI
 from app.api.router import router as api_router
 
-# PyWebIO APP
-from app.web.app import MainView
-from pywebio.platform.fastapi import asgi_app
+# Web功能已移除
 
 # OS
 import os
@@ -88,6 +86,18 @@ tags_metadata = [
     {
         "name": "Download",
         "description": "**(下载数据接口/Download data endpoints)**",
+    },
+    {
+        "name": "Cookie-Management",
+        "description": "**(Cookie管理接口/Cookie Management endpoints)**",
+    },
+    {
+        "name": "Aitable-Integration",
+        "description": "**(Aitable.ai集成接口/Aitable.ai Integration endpoints)**",
+    },
+    {
+        "name": "Health-Check",
+        "description": "**(健康检查接口/Health Check endpoints)**",
     },
 ]
 
@@ -138,10 +148,7 @@ app = FastAPI(
 # API router
 app.include_router(api_router, prefix="/api")
 
-# PyWebIO APP
-if config['Web']['PyWebIO_Enable']:
-    webapp = asgi_app(lambda: MainView().main_view())
-    app.mount("/", webapp)
+# Web功能已移除
 
 if __name__ == '__main__':
     uvicorn.run(app, host=Host_IP, port=Host_Port)

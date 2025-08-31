@@ -21,8 +21,7 @@ pydantic_core==2.18.1
 pyfiglet==1.0.0
 Pygments==2.17.2
 pypng==0.20220715.0
-pywebio==1.8.3
-pywebio-battery==0.6.0
+# Web功能已移除，PyWebIO依赖已删除
 PyYAML==6.0.1
 qrcode==7.4.2
 rich==13.7.1
@@ -36,3 +35,4 @@ uvicorn==0.29.0
 websockets==12.0
 gmssl==3.2.2
 tenacity~=9.0.0
+requests==2.31.0

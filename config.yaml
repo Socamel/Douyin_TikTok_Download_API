@@ -29,3 +29,9 @@ iOS_Shortcut:
   iOS_Shortcut_Link_EN: https://www.icloud.com/shortcuts/06f891a026df40cfa967a907feaea632
   iOS_Shortcut_Update_Note: 重构了快捷指令以兼容TikHub API。
   iOS_Shortcut_Update_Note_EN: Refactored the shortcut to be compatible with the TikHub API.
+
+# Aitable.ai Configuration
+Aitable:
+  api_key: "uskIZVNT6ybBEQxO5cTPcCa"    # 你的Aitable.ai API Key (Bearer Token)
+  base_id: "dstGGELxSrPMb0kRWa"    # 你的Aitable.ai Datasheet ID
+  table_name: "viwMgMZrxb1Zv"    # View ID

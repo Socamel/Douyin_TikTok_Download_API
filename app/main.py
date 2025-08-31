@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ==============================================================================
 # Copyright (C) 2021 Evil0ctal
 #
@@ -18,7 +19,7 @@
 # 　　　 　　 ／＞　　フ
 # 　　　 　　| 　_　 _ l
 # 　 　　 　／` ミ＿xノ
-# 　　 　 /　　　 　 |       Feed me Stars ⭐ ️
+# 　　 　 /　　　 　 |       Feed me Stars ⭐
 # 　　　 /　 ヽ　　 ﾉ
 # 　 　 │　　|　|　|
 # 　／￣|　　 |　|　|
@@ -147,6 +148,10 @@ app = FastAPI(
 
 # API router
 app.include_router(api_router, prefix="/api")
+
+# Health check router (直接注册到根路径)
+from app.api.endpoints import health
+app.include_router(health.router, tags=["Health-Check"])
 
 # Web功能已移除
 

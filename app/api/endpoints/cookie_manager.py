@@ -4,8 +4,17 @@ from typing import Dict, Any, Optional, List
 import sys
 import os
 
-# 添加项目根目录到Python路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+# 使用统一的路径配置
+from path_config import setup_project_paths
+setup_project_paths()
+
+import sys
+from pathlib import Path
+
+# 确保项目根目录在路径中
+project_root = Path(__file__).parent.parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from cookie_manager import cookie_manager
 from database import db_manager

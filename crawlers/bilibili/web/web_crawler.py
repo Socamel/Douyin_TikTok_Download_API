@@ -18,7 +18,7 @@
 # 　　　 　　 ／＞　　フ
 # 　　　 　　| 　_　 _ l
 # 　 　　 　／` ミ＿xノ
-# 　　 　 /　　　 　 |       Feed me Stars ⭐ ️
+# 　　 　 /　　　 　 |       Feed me Stars ⭐
 # 　　　 /　 ヽ　　 ﾉ
 # 　 　 │　　|　|　|
 # 　／￣|　　 |　|　|
@@ -423,12 +423,12 @@ class BilibiliWebCrawler:
 
 if __name__ == '__main__':
     # 初始化
-    BilibiliWebCrawler = BilibiliWebCrawler()
+    bilibili_web_crawler = BilibiliWebCrawler()
 
     # 开始时间
     start = time.time()
 
-    asyncio.run(BilibiliWebCrawler.main())
+    asyncio.run(bilibili_web_crawler.main())
 
     # 结束时间
     end = time.time()

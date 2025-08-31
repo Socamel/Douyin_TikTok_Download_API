@@ -5,7 +5,7 @@ from crawlers.bilibili.web.web_crawler import BilibiliWebCrawler  # 导入哔哩
 
 
 router = APIRouter()
-BilibiliWebCrawler = BilibiliWebCrawler()
+bilibili_web_crawler = BilibiliWebCrawler()
 
 
 # 获取单个视频详情信息
@@ -33,7 +33,7 @@ async def fetch_one_video(request: Request,
     bv_id = "BV1M1421t7hT"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_one_video(bv_id)
+        data = await bilibili_web_crawler.fetch_one_video(bv_id)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -75,7 +75,7 @@ async def fetch_one_video(request: Request,
     cid = "171776208"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_video_playurl(bv_id, cid)
+        data = await bilibili_web_crawler.fetch_video_playurl(bv_id, cid)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -118,7 +118,7 @@ async def fetch_user_post_videos(request: Request,
     pn = 1
     """
     try:
-        data = await BilibiliWebCrawler.fetch_user_post_videos(uid, pn)
+        data = await bilibili_web_crawler.fetch_user_post_videos(uid, pn)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -157,7 +157,7 @@ async def fetch_collect_folders(request: Request,
     uid = "178360345"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_collect_folders(uid)
+        data = await bilibili_web_crawler.fetch_collect_folders(uid)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -202,7 +202,7 @@ async def fetch_user_collection_videos(request: Request,
     pn = 1
     """
     try:
-        data = await BilibiliWebCrawler.fetch_folder_videos(folder_id, pn)
+        data = await bilibili_web_crawler.fetch_folder_videos(folder_id, pn)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -241,7 +241,7 @@ async def fetch_collect_folders(request: Request,
     uid = "178360345"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_user_profile(uid)
+        data = await bilibili_web_crawler.fetch_user_profile(uid)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -280,7 +280,7 @@ async def fetch_collect_folders(request: Request,
     pn = 1
     """
     try:
-        data = await BilibiliWebCrawler.fetch_com_popular(pn)
+        data = await bilibili_web_crawler.fetch_com_popular(pn)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -323,7 +323,7 @@ async def fetch_collect_folders(request: Request,
     pn = 1
     """
     try:
-        data = await BilibiliWebCrawler.fetch_video_comments(bv_id, pn)
+        data = await bilibili_web_crawler.fetch_video_comments(bv_id, pn)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -370,7 +370,7 @@ async def fetch_collect_folders(request: Request,
     rpid = "237109455120"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_comment_reply(bv_id, pn, rpid)
+        data = await bilibili_web_crawler.fetch_comment_reply(bv_id, pn, rpid)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -414,7 +414,7 @@ async def fetch_collect_folders(request: Request,
     offset = "953154282154098691"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_user_dynamic(uid, offset)
+        data = await bilibili_web_crawler.fetch_user_dynamic(uid, offset)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -452,7 +452,7 @@ async def fetch_one_video(request: Request,
     cid = "1639235405"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_video_danmaku(cid)
+        data = await bilibili_web_crawler.fetch_video_danmaku(cid)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -491,7 +491,7 @@ async def fetch_collect_folders(request: Request,
     room_id = "22816111"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_live_room_detail(room_id)
+        data = await bilibili_web_crawler.fetch_live_room_detail(room_id)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -530,7 +530,7 @@ async def fetch_collect_folders(request: Request,
     room_id = "1815229528"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_live_videos(room_id)
+        data = await bilibili_web_crawler.fetch_live_videos(room_id)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -573,7 +573,7 @@ async def fetch_collect_folders(request: Request,
     pn = 1
     """
     try:
-        data = await BilibiliWebCrawler.fetch_live_streamers(area_id, pn)
+        data = await bilibili_web_crawler.fetch_live_streamers(area_id, pn)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -608,7 +608,7 @@ async def fetch_collect_folders(request: Request,):
     # [示例/Example]
     """
     try:
-        data = await BilibiliWebCrawler.fetch_all_live_areas()
+        data = await bilibili_web_crawler.fetch_all_live_areas()
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -646,7 +646,7 @@ async def fetch_one_video(request: Request,
     bv_id = "BV1M1421t7hT"
     """
     try:
-        data = await BilibiliWebCrawler.bv_to_aid(bv_id)
+        data = await bilibili_web_crawler.bv_to_aid(bv_id)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)
@@ -684,7 +684,7 @@ async def fetch_one_video(request: Request,
     bv_id = "BV1vf421i7hV"
     """
     try:
-        data = await BilibiliWebCrawler.fetch_video_parts(bv_id)
+        data = await bilibili_web_crawler.fetch_video_parts(bv_id)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)

@@ -4,7 +4,7 @@ from app.api.models.APIResponseModel import ResponseModel, ErrorResponseModel  #
 from crawlers.tiktok.app.app_crawler import TikTokAPPCrawler  # 导入APP爬虫
 
 router = APIRouter()
-TikTokAPPCrawler = TikTokAPPCrawler()
+tiktok_app_crawler = TikTokAPPCrawler()
 
 
 # 获取单个作品数据
@@ -35,7 +35,7 @@ async def fetch_one_video(request: Request,
     aweme_id = "7350810998023949599"
     """
     try:
-        data = await TikTokAPPCrawler.fetch_one_video(aweme_id)
+        data = await tiktok_app_crawler.fetch_one_video(aweme_id)
         return ResponseModel(code=200,
                              router=request.url.path,
                              data=data)

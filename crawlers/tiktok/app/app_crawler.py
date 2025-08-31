@@ -18,7 +18,7 @@
 # 　　　 　　 ／＞　　フ
 # 　　　 　　| 　_　 _ l
 # 　 　　 　／` ミ＿xノ
-# 　　 　 /　　　 　 |       Feed me Stars ⭐ ️
+# 　　 　 /　　　 　 |       Feed me Stars ⭐
 # 　　　 /　 ヽ　　 ﾉ
 # 　 　 │　　|　|　|
 # 　／￣|　　 |　|　|
@@ -113,12 +113,12 @@ class TikTokAPPCrawler:
 
 if __name__ == "__main__":
     # 初始化
-    TikTokAPPCrawler = TikTokAPPCrawler()
+    tiktok_app_crawler = TikTokAPPCrawler()
 
     # 开始时间
     start = time.time()
 
-    asyncio.run(TikTokAPPCrawler.main())
+    asyncio.run(tiktok_app_crawler.main())
 
     # 结束时间
     end = time.time()

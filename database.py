@@ -135,12 +135,19 @@ class DatabaseManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+                
+                # 确保 user_id 存在
+                user_id = user_data.get('user_id')
+                if not user_id:
+                    print("错误: user_id 不能为空")
+                    return False
+                
                 cursor.execute("""
                     INSERT OR REPLACE INTO users 
                     (user_id, username, nickname, avatar_url, follower_count, following_count, video_count, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    user_data.get('user_id'),
+                    user_id,
                     user_data.get('username'),
                     user_data.get('nickname'),
                     user_data.get('avatar_url'),
@@ -151,10 +158,75 @@ class DatabaseManager:
                 ))
                 
                 conn.commit()
+                print(f"成功保存用户: {user_id} ({user_data.get('nickname', user_data.get('username', '未知'))})")
                 return True
         except Exception as e:
             print(f"保存用户失败: {e}")
             return False
+    
+    def save_blogger_with_user_id(self, blogger_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        保存博主信息，同时确保 user_id 存在
+        如果 blogger_data 中没有 user_id，会尝试从其他字段生成或返回错误
+        """
+        try:
+            user_id = blogger_data.get('user_id')
+            
+            # 如果没有 user_id，尝试从其他字段生成
+            if not user_id:
+                # 尝试从 URL 中提取 user_id
+                if 'url' in blogger_data and blogger_data['url']:
+                    # 从抖音URL中提取 user_id 的逻辑
+                    url = blogger_data['url']
+                    if 'douyin.com' in url:
+                        # 简单的URL解析，实际项目中可能需要更复杂的逻辑
+                        if '/user/' in url:
+                            user_id = url.split('/user/')[-1].split('?')[0]
+                        elif 'sec_uid=' in url:
+                            user_id = url.split('sec_uid=')[1].split('&')[0]
+                
+                # 如果仍然没有 user_id，生成一个基于昵称的临时ID
+                if not user_id and blogger_data.get('nickname'):
+                    user_id = f"temp_{blogger_data['nickname']}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                    print(f"警告: 为博主 {blogger_data['nickname']} 生成了临时 user_id: {user_id}")
+            
+            if not user_id:
+                return {
+                    'success': False,
+                    'error': '无法确定 user_id，请提供有效的 user_id 或包含 user_id 的URL'
+                }
+            
+            # 准备用户数据 - 只使用nickname
+            user_data = {
+                'user_id': user_id,
+                'username': blogger_data.get('nickname', '未知博主'),
+                'nickname': blogger_data.get('nickname', '未知博主'),
+                'avatar_url': blogger_data.get('avatar_url', ''),
+                'follower_count': blogger_data.get('follower_count', 0),
+                'following_count': blogger_data.get('following_count', 0),
+                'video_count': blogger_data.get('video_count', 0)
+            }
+            
+            # 保存用户信息
+            success = self.save_user(user_data)
+            
+            if success:
+                return {
+                    'success': True,
+                    'user_id': user_id,
+                    'message': f'成功保存博主 {user_data["nickname"]} (user_id: {user_id})'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f'保存博主信息失败: {user_data["nickname"]}'
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'处理博主信息时发生错误: {str(e)}'
+            }
     
     def save_video(self, video_data: Dict[str, Any]) -> bool:
         """保存视频信息"""

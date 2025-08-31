@@ -10,8 +10,9 @@ import sys
 import sqlite3
 from datetime import datetime
 
-# 添加项目根目录到Python路径
-sys.path.append(os.path.dirname(__file__))
+# 使用统一的路径配置
+from path_config import setup_project_paths
+setup_project_paths()
 
 from database import db_manager
 

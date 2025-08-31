@@ -18,7 +18,7 @@
 # 　　　 　　 ／＞　　フ
 # 　　　 　　| 　_　 _ l
 # 　 　　 　／` ミ＿xノ
-# 　　 　 /　　　 　 |       Feed me Stars ⭐ ️
+# 　　 　 /　　　 　 |       Feed me Stars ⭐
 # 　　　 /　 ヽ　　 ﾉ
 # 　 　 │　　|　|　|
 # 　／￣|　　 |　|　|
@@ -68,6 +68,12 @@ with open(f"{path}/config.yaml", "r", encoding="utf-8") as f:
 
 
 class DouyinWebCrawler:
+
+    def __init__(self):
+        """
+        初始化抖音Web爬虫
+        """
+        pass
 
     # 从配置文件中获取抖音的请求头
     async def get_douyin_headers(self):
@@ -147,6 +153,14 @@ class DouyinWebCrawler:
 
             response = await crawler.fetch_get_json(endpoint)
         return response
+
+    # 获取用户新视频数据（与发布视频相同，但用于简化格式API）
+    async def fetch_user_new_videos(self, sec_user_id: str, max_cursor: int, count: int):
+        """
+        获取用户新视频数据，实际上是获取用户发布的最新视频
+        这个方法是为了兼容简化格式API而添加的
+        """
+        return await self.fetch_user_post_videos(sec_user_id, max_cursor, count)
 
     # 获取用户收藏作品数据（用户提供自己的Cookie）
     async def fetch_user_collection_videos(self, cookie: str, cursor: int = 0, count: int = 20):
@@ -515,12 +529,12 @@ class DouyinWebCrawler:
 
 if __name__ == "__main__":
     # 初始化
-    DouyinWebCrawler = DouyinWebCrawler()
+    douyin_crawler = DouyinWebCrawler()
 
     # 开始时间
     start = time.time()
 
-    asyncio.run(DouyinWebCrawler.main())
+    asyncio.run(douyin_crawler.main())
 
     # 结束时间
     end = time.time()

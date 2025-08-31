@@ -16,8 +16,17 @@ from pydantic import BaseModel
 
 from app.api.models.APIResponseModel import ResponseModel, ErrorResponseModel
 
-# 添加项目根目录到Python路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+# 使用统一的路径配置
+from path_config import setup_project_paths
+setup_project_paths()
+
+import sys
+from pathlib import Path
+
+# 确保项目根目录在路径中
+project_root = Path(__file__).parent.parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from database import db_manager
 from cookie_manager import cookie_manager
@@ -55,6 +64,15 @@ class AitableAutomationRequest(BaseModel):
     data: List[AitableAutomationData]
     source: str = "aitable_automation"
     trigger_type: Optional[str] = "record_change"
+
+class AddBloggerRequest(BaseModel):
+    blogger_name: str
+    user_id: Optional[str] = None
+    url: Optional[str] = None
+    avatar_url: Optional[str] = None
+    follower_count: Optional[int] = 0
+    following_count: Optional[int] = 0
+    video_count: Optional[int] = 0
 
 @router.post("/sync_data", response_model=ResponseModel)
 async def sync_aitable_data(request: Request):
@@ -123,23 +141,28 @@ async def sync_aitable_data(request: Request):
                     else:
                         sync_results["errors"].append(f"Cookie保存失败: {fields.get('Blogger', '未知')}")
                 
-                # 提取用户数据
-                if 'user_id' in fields and fields['user_id']:
-                    # 保存用户信息
-                    success = db_manager.save_user({
-                        'user_id': fields['user_id'],
+                # 提取用户数据 - 使用新的方法确保 user_id 存在
+                if 'Blogger' in fields and fields['Blogger']:
+                    # 准备博主数据
+                    blogger_data = {
+                        'user_id': fields.get('user_id', ''),  # 可能为空
                         'username': fields.get('Blogger', ''),
                         'nickname': fields.get('Blogger', ''),
-                        'avatar_url': '',
-                        'follower_count': 0,
-                        'following_count': 0,
-                        'video_count': 0
-                    })
+                        'avatar_url': fields.get('avatar_url', ''),
+                        'follower_count': fields.get('follower_count', 0),
+                        'following_count': fields.get('following_count', 0),
+                        'video_count': fields.get('video_count', 0),
+                        'url': fields.get('url', '')  # 可能包含 user_id
+                    }
                     
-                    if success:
+                    # 使用新的方法保存博主信息
+                    result = db_manager.save_blogger_with_user_id(blogger_data)
+                    
+                    if result['success']:
                         sync_results["users_synced"] += 1
+                        print(f"成功同步博主: {result['message']}")
                     else:
-                        sync_results["errors"].append(f"用户保存失败: {fields.get('Blogger', '未知')}")
+                        sync_results["errors"].append(f"博主保存失败 ({fields.get('Blogger', '未知')}): {result['error']}")
                         
             except Exception as e:
                 sync_results["errors"].append(f"处理记录失败 {record_id}: {str(e)}")
@@ -189,6 +212,94 @@ async def get_all_users():
         raise HTTPException(
             status_code=500,
             detail=f"获取用户信息失败: {str(e)}"
+        )
+
+@router.post("/add_blogger", response_model=ResponseModel)
+async def add_blogger(request: AddBloggerRequest):
+    """
+    添加博主，自动处理 user_id
+    Add blogger with automatic user_id handling
+    """
+    try:
+        # 准备博主数据
+        blogger_data = {
+            'user_id': request.user_id,
+            'username': request.blogger_name,
+            'nickname': request.blogger_name,
+            'avatar_url': request.avatar_url,
+            'follower_count': request.follower_count,
+            'following_count': request.following_count,
+            'video_count': request.video_count,
+            'url': request.url
+        }
+        
+        # 使用新的方法保存博主信息
+        result = db_manager.save_blogger_with_user_id(blogger_data)
+        
+        if result['success']:
+            return ResponseModel(
+                code=200,
+                message=result['message'],
+                data={
+                    'blogger_name': request.blogger_name,
+                    'user_id': result['user_id'],
+                    'status': 'success'
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=result['error']
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"添加博主失败: {str(e)}"
+        )
+
+@router.get("/blogger/{blogger_name}", response_model=ResponseModel)
+async def get_blogger_info(blogger_name: str):
+    """
+    根据博主名称获取博主信息
+    Get blogger information by name
+    """
+    try:
+        # 从数据库查找博主
+        users = db_manager.get_all_users()
+        
+        # 查找匹配的博主
+        matching_users = []
+        for user in users:
+            if (user['username'] and blogger_name.lower() in user['username'].lower()) or \
+               (user['nickname'] and blogger_name.lower() in user['nickname'].lower()):
+                matching_users.append(user)
+        
+        if matching_users:
+            return ResponseModel(
+                code=200,
+                message=f"找到 {len(matching_users)} 个匹配的博主",
+                data={
+                    'bloggers': matching_users,
+                    'search_term': blogger_name
+                }
+            )
+        else:
+            return ResponseModel(
+                code=404,
+                message=f"未找到匹配的博主: {blogger_name}",
+                data={
+                    'bloggers': [],
+                    'search_term': blogger_name
+                }
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"查询博主信息失败: {str(e)}"
         )
 
 @router.put("/update_user", response_model=ResponseModel)

@@ -18,7 +18,7 @@
 # 　　　 　　 ／＞　　フ
 # 　　　 　　| 　_　 _ l
 # 　 　　 　／` ミ＿xノ
-# 　　 　 /　　　 　 |       Feed me Stars ⭐ ️
+# 　　 　 /　　　 　 |       Feed me Stars ⭐
 # 　　　 /　 ヽ　　 ﾉ
 # 　 　 │　　|　|　|
 # 　／￣|　　 |　|　|
@@ -40,29 +40,29 @@ from crawlers.tiktok.app.app_crawler import TikTokAPPCrawler  # 导入TikTok App
 
 class HybridCrawler:
     def __init__(self):
-        self.DouyinWebCrawler = DouyinWebCrawler()
-        self.TikTokWebCrawler = TikTokWebCrawler()
-        self.TikTokAPPCrawler = TikTokAPPCrawler()
+        self.douyin_crawler = DouyinWebCrawler()
+        self.tiktok_web_crawler = TikTokWebCrawler()
+        self.tiktok_app_crawler = TikTokAPPCrawler()
 
     async def hybrid_parsing_single_video(self, url: str, minimal: bool = False):
         # 解析抖音视频/Parse Douyin video
         if "douyin" in url:
             platform = "douyin"
-            aweme_id = await self.DouyinWebCrawler.get_aweme_id(url)
-            data = await self.DouyinWebCrawler.fetch_one_video(aweme_id)
+            aweme_id = await self.douyin_crawler.get_aweme_id(url)
+            data = await self.douyin_crawler.fetch_one_video(aweme_id)
             data = data.get("aweme_detail")
             # $.aweme_detail.aweme_type
             aweme_type = data.get("aweme_type")
         # 解析TikTok视频/Parse TikTok video
         elif "tiktok" in url:
             platform = "tiktok"
-            aweme_id = await self.TikTokWebCrawler.get_aweme_id(url)
+            aweme_id = await self.tiktok_web_crawler.get_aweme_id(url)
 
             # 2024-09-14: Switch to TikTokAPPCrawler instead of TikTokWebCrawler
-            # data = await self.TikTokWebCrawler.fetch_one_video(aweme_id)
+            # data = await self.tiktok_web_crawler.fetch_one_video(aweme_id)
             # data = data.get("itemInfo").get("itemStruct")
 
-            data = await self.TikTokAPPCrawler.fetch_one_video(aweme_id)
+            data = await self.tiktok_app_crawler.fetch_one_video(aweme_id)
             # $.imagePost exists if aweme_type is photo
             aweme_type = data.get("aweme_type")
         else:

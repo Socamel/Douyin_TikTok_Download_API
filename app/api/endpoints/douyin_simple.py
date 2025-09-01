@@ -16,6 +16,78 @@ from database import db_manager
 router = APIRouter()
 douyin_crawler = DouyinWebCrawler()
 
+async def fetch_all_videos_with_pagination(sec_user_id: str, fetch_method, max_count: int = None):
+    """
+    使用翻页获取用户的所有视频
+    
+    Args:
+        sec_user_id: 用户sec_user_id
+        fetch_method: 获取数据的方法
+        max_count: 最大获取数量，None表示获取所有
+    
+    Returns:
+        dict: 合并后的视频数据
+    """
+    all_videos = []
+    max_cursor = 0
+    has_more = True
+    page_count = 0
+    max_pages = 50  # 防止无限循环
+    
+    while has_more and page_count < max_pages:
+        try:
+            # 获取当前页数据
+            page_data = await fetch_method(sec_user_id, max_cursor, 50)  # 每页50个，提高效率
+            
+            if not page_data or 'aweme_list' not in page_data:
+                break
+                
+            videos = page_data.get('aweme_list', [])
+            if not videos:
+                break
+                
+            # 添加视频到总列表
+            all_videos.extend(videos)
+            
+            # 检查是否达到最大数量
+            if max_count and len(all_videos) >= max_count:
+                all_videos = all_videos[:max_count]
+                break
+            
+            # 获取下一页游标
+            max_cursor = page_data.get('max_cursor', 0)
+            has_more = page_data.get('has_more', 0) == 1
+            
+            page_count += 1
+            
+            # 防止无限循环
+            if max_cursor == 0:
+                break
+                
+        except Exception as e:
+            print(f"翻页获取视频时出错: {e}")
+            break
+    
+    # 构建返回数据
+    if all_videos:
+        # 使用第一页的用户信息
+        first_page = await fetch_method(sec_user_id, 0, 50)
+        user_info = first_page.get('user_info', {}) if first_page else {}
+        
+        return {
+            'aweme_list': all_videos,
+            'user_info': user_info,
+            'total_fetched': len(all_videos),
+            'page_count': page_count
+        }
+    else:
+        return {
+            'aweme_list': [],
+            'user_info': {},
+            'total_fetched': 0,
+            'page_count': 0
+        }
+
 def create_simple_video_response(request: Request, videos_data: dict, endpoint_name: str, sec_user_id: str = None) -> ResponseModel:
     """
     创建简化格式的视频响应
@@ -101,7 +173,7 @@ def create_simple_video_response(request: Request, videos_data: dict, endpoint_n
         }
     )
 
-async def handle_simple_video_endpoint(request: Request, sec_user_id: str, max_cursor: int, count: int, fetch_method, endpoint_name: str):
+async def handle_simple_video_endpoint(request: Request, sec_user_id: str, max_cursor: int, count: int, fetch_method, endpoint_name: str, auto_pagination: bool = False):
     """
     处理简化格式视频端点的通用函数
     
@@ -112,13 +184,18 @@ async def handle_simple_video_endpoint(request: Request, sec_user_id: str, max_c
         count: 每页数量
         fetch_method: 获取数据的方法
         endpoint_name: 端点名称
+        auto_pagination: 是否启用自动翻页
     
     Returns:
         ResponseModel: 标准化的响应模型
     """
     try:
-        # 获取视频数据
-        all_videos_data = await fetch_method(sec_user_id, max_cursor, count)
+        if auto_pagination and max_cursor == 0:
+            # 使用自动翻页获取所有视频
+            all_videos_data = await fetch_all_videos_with_pagination(sec_user_id, fetch_method, count)
+        else:
+            # 获取单页视频数据
+            all_videos_data = await fetch_method(sec_user_id, max_cursor, count)
         
         # 创建响应，传入sec_user_id用于数据库查询
         return create_simple_video_response(request, all_videos_data, endpoint_name, sec_user_id)
@@ -138,7 +215,8 @@ async def fetch_user_new_videos_simple(request: Request,
                                           example="MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE",
                                           description="用户sec_user_id/User sec_user_id"),
                                       max_cursor: int = Query(default=0, description="最大游标/Maximum cursor"),
-                                      count: int = Query(default=20, description="每页数量/Number per page")):
+                                      count: int = Query(default=1000, description="每页数量/Number per page"),
+                                      auto_pagination: bool = Query(default=False, description="自动翻页获取所有视频/Auto pagination to get all videos")):
     """
     # [中文]
     ### 用途:
@@ -149,6 +227,7 @@ async def fetch_user_new_videos_simple(request: Request,
     - sec_user_id: 用户sec_user_id
     - max_cursor: 最大游标
     - count: 每页数量
+    - auto_pagination: 自动翻页（当max_cursor=0时生效）
     ### 返回:
     - 简化格式的视频数据
 
@@ -161,13 +240,15 @@ async def fetch_user_new_videos_simple(request: Request,
     - sec_user_id: User sec_user_id
     - max_cursor: Maximum cursor
     - count: Number per page
+    - auto_pagination: Auto pagination (effective when max_cursor=0)
     ### Return:
     - Simplified video data
     """
     return await handle_simple_video_endpoint(
         request, sec_user_id, max_cursor, count, 
         douyin_crawler.fetch_user_new_videos, 
-        "fetch_user_new_videos_simple"
+        "fetch_user_new_videos_simple",
+        auto_pagination
     )
 
 @router.get("/fetch_user_post_videos_simple", response_model=ResponseModel,
@@ -177,7 +258,8 @@ async def fetch_user_post_videos_simple(request: Request,
                                            example="MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE",
                                            description="用户sec_user_id/User sec_user_id"),
                                        max_cursor: int = Query(default=0, description="最大游标/Maximum cursor"),
-                                       count: int = Query(default=20, description="每页数量/Number per page")):
+                                       count: int = Query(default=1000, description="每页数量/Number per page"),
+                                       auto_pagination: bool = Query(default=False, description="自动翻页获取所有视频/Auto pagination to get all videos")):
     """
     # [中文]
     ### 用途:
@@ -187,6 +269,7 @@ async def fetch_user_post_videos_simple(request: Request,
     - sec_user_id: 用户sec_user_id
     - max_cursor: 最大游标
     - count: 每页数量
+    - auto_pagination: 自动翻页（当max_cursor=0时生效）
     ### 返回:
     - 简化格式的视频数据
 
@@ -198,13 +281,15 @@ async def fetch_user_post_videos_simple(request: Request,
     - sec_user_id: User sec_user_id
     - max_cursor: Maximum cursor
     - count: Number per page
+    - auto_pagination: Auto pagination (effective when max_cursor=0)
     ### Return:
     - Simplified video data
     """
     return await handle_simple_video_endpoint(
         request, sec_user_id, max_cursor, count, 
         douyin_crawler.fetch_user_post_videos, 
-        "fetch_user_post_videos_simple"
+        "fetch_user_post_videos_simple",
+        auto_pagination
     )
 
 @router.get("/fetch_user_like_videos_simple", response_model=ResponseModel,
@@ -214,7 +299,8 @@ async def fetch_user_like_videos_simple(request: Request,
                                            example="MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE",
                                            description="用户sec_user_id/User sec_user_id"),
                                        max_cursor: int = Query(default=0, description="最大游标/Maximum cursor"),
-                                       count: int = Query(default=20, description="每页数量/Number per page")):
+                                       count: int = Query(default=1000, description="每页数量/Number per page"),
+                                       auto_pagination: bool = Query(default=False, description="自动翻页获取所有视频/Auto pagination to get all videos")):
     """
     # [中文]
     ### 用途:
@@ -224,6 +310,7 @@ async def fetch_user_like_videos_simple(request: Request,
     - sec_user_id: 用户sec_user_id
     - max_cursor: 最大游标
     - count: 每页数量
+    - auto_pagination: 自动翻页（当max_cursor=0时生效）
     ### 返回:
     - 简化格式的视频数据
 
@@ -235,11 +322,13 @@ async def fetch_user_like_videos_simple(request: Request,
     - sec_user_id: User sec_user_id
     - max_cursor: Maximum cursor
     - count: Number per page
+    - auto_pagination: Auto pagination (effective when max_cursor=0)
     ### Return:
     - Simplified video data
     """
     return await handle_simple_video_endpoint(
         request, sec_user_id, max_cursor, count, 
         douyin_crawler.fetch_user_like_videos, 
-        "fetch_user_like_videos_simple"
+        "fetch_user_like_videos_simple",
+        auto_pagination
     )

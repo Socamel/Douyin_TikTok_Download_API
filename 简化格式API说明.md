@@ -4,6 +4,8 @@
 
 为了适配 Aitable.ai 存储需求，项目新增了简化格式的API接口，所有视频信息API都输出统一的 `Title`、`URL`、`Blogger` 三个字段格式。
 
+**重要说明**：简化格式API会优先从本地数据库获取用户昵称，确保Blogger字段显示正确的博主名称。API会使用传入的 `sec_user_id` 参数查询数据库中的用户信息。如果数据库中还没有该用户信息，建议先通过Aitable.ai集成或手动添加用户信息。
+
 ## 新增的简化格式API
 
 ### 1. 获取用户新视频（简化格式）
@@ -116,17 +118,17 @@ GET /api/douyin/simple/fetch_user_mix_videos_simple
 
 ### 1. 获取用户新视频
 ```bash
-curl -X GET "http://localhost:80/api/douyin/simple/fetch_user_new_videos_simple?sec_user_id=MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE&count=10"
+curl -X GET "http://localhost:8501/api/douyin/simple/fetch_user_new_videos_simple?sec_user_id=MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE&count=10"
 ```
 
 ### 2. 获取用户发布视频
 ```bash
-curl -X GET "http://localhost:80/api/douyin/simple/fetch_user_post_videos_simple?sec_user_id=MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE&count=20"
+curl -X GET "http://localhost:8501/api/douyin/simple/fetch_user_post_videos_simple?sec_user_id=MS4wLjABAAAANXSltcLCzDGmdNFI2Q_QixVTr67NiYzjKOIP5s03CAE&count=20"
 ```
 
 ### 3. 获取用户喜欢视频
 ```bash
-curl -X GET "http://localhost:80/api/douyin/simple/fetch_user_like_videos_simple?sec_user_id=MS4wLjABAAAAW9FWcqS7RdQAWPd2AA5fL_ilmqsIFUCQ_Iym6Yh9_cUa6ZRqVLjVQSUjlHrfXY1Y&counts=15"
+curl -X GET "http://localhost:8501/api/douyin/simple/fetch_user_like_videos_simple?sec_user_id=MS4wLjABAAAAW9FWcqS7RdQAWPd2AA5fL_ilmqsIFUCQ_Iym6Yh9_cUa6ZRqVLjVQSUjlHrfXY1Y&counts=15"
 ```
 
 ## 与Aitable.ai集成
@@ -161,3 +163,5 @@ curl -X GET "http://localhost:80/api/douyin/simple/fetch_user_like_videos_simple
 2. 简化格式API专门用于 Aitable.ai 存储场景
 3. 如果需要完整视频信息，仍可使用原有的详细格式API
 4. 所有简化格式API都支持分页和游标功能
+5. **Blogger字段优化**：API会优先从本地数据库获取用户昵称，如果数据库中没有该用户信息，会显示"未知博主"
+6. **建议流程**：首次使用某个sec_user_id时，建议先通过Aitable.ai集成或Streamlit数据库界面添加用户信息

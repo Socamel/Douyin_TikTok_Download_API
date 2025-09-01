@@ -4,7 +4,7 @@
 API:
   # Network Configuration
   Host_IP: 0.0.0.0    # default IP | 默认IP
-  Host_Port: 80    # default port is 80 | 默认端口为80
+  Host_Port: 8501    # default port is 8501 | 默认端口为8501
   Docs_URL: /docs    # API documentation URL | API文档URL
   Redoc_URL: /redoc    # API documentation URL | API文档URL
 

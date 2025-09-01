@@ -49,7 +49,7 @@ class EnhancedVideoScheduler:
             return {
                 'API': {
                     'Host_IP': 'localhost',
-                    'Host_Port': 80
+                    'Host_Port': 8501
                 },
                 'Aitable': {
                     'api_key': '',

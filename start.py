@@ -74,7 +74,12 @@ def main():
             host=host,
             port=port,
             reload=True,
-            log_level="info"
+            log_level="warning",  # 改为warning级别，减少日志输出
+            # 添加连接复用配置
+            limit_concurrency=1000,
+            limit_max_requests=1000,
+            timeout_keep_alive=5,
+            access_log=False  # 禁用访问日志
         )
         
     except ImportError as e:

@@ -153,6 +153,80 @@ app.include_router(api_router, prefix="/api")
 from app.api.endpoints import health
 app.include_router(health.router, tags=["Health-Check"])
 
+# 添加处理Streamlit健康检查请求的路由
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+
+# 添加CORS中间件，允许连接复用
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 添加全局中间件，处理连接复用
+from fastapi import Request
+import time
+from collections import defaultdict
+import asyncio
+
+# 请求频率限制
+request_timestamps = defaultdict(list)
+
+@app.middleware("http")
+async def add_connection_headers(request: Request, call_next):
+    """添加连接复用头并阻止重复请求"""
+    # 检查是否是Streamlit健康检查请求
+    if request.url.path in ["/_stcore/health", "/_stcore/host-config"]:
+        # 获取客户端IP
+        client_ip = request.client.host if request.client else "unknown"
+        
+        # 检查请求频率（每秒最多1次）
+        current_time = time.time()
+        if client_ip in request_timestamps:
+            # 清理超过1秒的旧请求
+            request_timestamps[client_ip] = [t for t in request_timestamps[client_ip] if current_time - t < 1]
+            
+            # 如果1秒内请求超过1次，返回429状态码
+            if len(request_timestamps[client_ip]) >= 1:
+                return JSONResponse(
+                    {"error": "Too many requests"}, 
+                    status_code=429,
+                    headers={"Connection": "close"}
+                )
+        
+        # 记录请求时间
+        request_timestamps[client_ip].append(current_time)
+        
+        # 直接返回响应，不进行后续处理
+        response = JSONResponse({"status": "ok"})
+        response.headers["Connection"] = "close"  # 强制关闭连接
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
+    
+    # 其他请求正常处理
+    response = await call_next(request)
+    response.headers["Connection"] = "keep-alive"
+    response.headers["Keep-Alive"] = "timeout=5, max=1000"
+    return response
+
+@app.get("/_stcore/health")
+async def stcore_health():
+    """处理Streamlit健康检查请求"""
+    response = JSONResponse({"status": "ok"})
+    response.headers["Connection"] = "keep-alive"
+    return response
+
+@app.get("/_stcore/host-config")
+async def stcore_host_config():
+    """处理Streamlit主机配置请求"""
+    response = JSONResponse({"status": "ok"})
+    response.headers["Connection"] = "keep-alive"
+    return response
+
 # Web功能已移除
 
 if __name__ == '__main__':

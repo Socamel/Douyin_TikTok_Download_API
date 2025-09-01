@@ -200,7 +200,7 @@ def show_api_endpoints():
 
     print("      GET  /api/douyin/web/fetch_one_video       - ���SUS*NƉ��")
 
-    print("      ... �fY�z�p����� http://localhost:80/docs")
+    print("      ... 访问API文档: http://localhost:8501/docs")
 
 
 
@@ -212,7 +212,7 @@ def show_aitable_info():
 
     print("   /ec�ǏAPITekCookie�TZS;N�Oo`:")
 
-    print("   URL: http://localhost:80/api/aitable/blogger_cookie")
+    print("   URL: http://localhost:8501/api/aitable/blogger_cookie")
 
     print("   �e�l: POST")
 

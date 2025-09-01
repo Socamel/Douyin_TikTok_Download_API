@@ -478,5 +478,74 @@ class DatabaseManager:
                 'total_cookie_count': 0
             }
 
+    def get_all_videos(self) -> List[Dict[str, Any]]:
+        """获取所有视频信息"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, video_id, title, video_url, user_id, 
+                           blogger_name, created_at, updated_at
+                    FROM videos 
+                    ORDER BY created_at DESC
+                """)
+                
+                videos = []
+                for row in cursor.fetchall():
+                    videos.append({
+                        'id': row[0],
+                        'video_id': row[1],
+                        'title': row[2],
+                        'video_url': row[3],
+                        'user_id': row[4],
+                        'blogger_name': row[5],
+                        'created_at': row[6],
+                        'updated_at': row[7]
+                    })
+                return videos
+                
+        except Exception as e:
+            print(f"获取所有视频信息失败: {e}")
+            return []
+
+    def clear_all_videos(self) -> bool:
+        """清空所有视频"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM videos")
+                conn.commit()
+                return True
+                
+        except Exception as e:
+            print(f"清空所有视频失败: {e}")
+            return False
+
+    def clear_all_users(self) -> bool:
+        """清空所有用户"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM users")
+                conn.commit()
+                return True
+                
+        except Exception as e:
+            print(f"清空所有用户失败: {e}")
+            return False
+
+    def clear_all_cookies(self) -> bool:
+        """清空所有Cookie"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM cookies")
+                conn.commit()
+                return True
+                
+        except Exception as e:
+            print(f"清空所有Cookie失败: {e}")
+            return False
+
 # 全局数据库管理器实例
 db_manager = DatabaseManager()

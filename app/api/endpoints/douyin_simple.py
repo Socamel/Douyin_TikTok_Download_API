@@ -16,7 +16,7 @@ from database import db_manager
 router = APIRouter()
 douyin_crawler = DouyinWebCrawler()
 
-def create_simple_video_response(request: Request, videos_data: dict, endpoint_name: str) -> ResponseModel:
+def create_simple_video_response(request: Request, videos_data: dict, endpoint_name: str, sec_user_id: str = None) -> ResponseModel:
     """
     创建简化格式的视频响应
     
@@ -24,6 +24,7 @@ def create_simple_video_response(request: Request, videos_data: dict, endpoint_n
         request: FastAPI请求对象
         videos_data: 视频数据字典
         endpoint_name: 端点名称，用于错误信息
+        sec_user_id: 用户sec_user_id，用于数据库查询
     
     Returns:
         ResponseModel: 标准化的响应模型
@@ -63,8 +64,25 @@ def create_simple_video_response(request: Request, videos_data: dict, endpoint_n
     for video in all_videos:
         video_url = video.get('video', {}).get('play_addr', {}).get('url_list', [''])[0] if video.get('video', {}).get('play_addr', {}).get('url_list') else ''
         
-        # 确保Blogger字段有值 - 只使用nickname
-        blogger_name = user_info.get('nickname', '未知博主')
+        # 优先从数据库获取用户昵称，如果没有则使用API返回的nickname
+        blogger_name = '未知博主'
+        
+        # 尝试从数据库获取用户信息
+        try:
+            # 优先使用传入的sec_user_id查询数据库
+            if sec_user_id:
+                user_data = db_manager.get_user_info(sec_user_id)
+                if user_data and user_data.get('nickname'):
+                    blogger_name = user_data['nickname']
+                else:
+                    # 如果数据库中没有，使用API返回的nickname
+                    blogger_name = user_info.get('nickname', '未知博主')
+            else:
+                # 如果没有sec_user_id，使用API返回的nickname
+                blogger_name = user_info.get('nickname', '未知博主')
+        except Exception as e:
+            # 如果查询数据库出错，使用API返回的nickname
+            blogger_name = user_info.get('nickname', '未知博主')
         
         videos.append({
             'Title': video.get('desc', ''),
@@ -102,8 +120,8 @@ async def handle_simple_video_endpoint(request: Request, sec_user_id: str, max_c
         # 获取视频数据
         all_videos_data = await fetch_method(sec_user_id, max_cursor, count)
         
-        # 创建响应
-        return create_simple_video_response(request, all_videos_data, endpoint_name)
+        # 创建响应，传入sec_user_id用于数据库查询
+        return create_simple_video_response(request, all_videos_data, endpoint_name, sec_user_id)
             
     except Exception as e:
         status_code = 400
